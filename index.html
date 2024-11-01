@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FACEWAVE</title>
+<style>
+    /* Reset and basic styles */
+    * {
+        box-sizing: border-box;
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #1e1e1e;
+        color: #ffffff;
+        margin: 0;
+        overflow: hidden;
+    }
+    /* Container layout */
+    #container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+    /* Header styling */
+    header {
+        background-color: #2d2d2d;
+        padding: 10px 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    header h1 {
+        margin: 0;
+        font-size: 24px;
+    }
+    /* Main content layout */
+    #mainContent {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+    /* Video container */
+    #videoContainer {
+        position: relative;
+        flex: 1;
+        background-color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+    }
+    #videoWrapper {
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0,0,0,0.7);
+    }
+    #webcam, #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+    /* Controls panel */
+    #controls {
+        width: 350px;
+        background-color: #2d2d2d;
+        padding: 20px;
+        padding-top: 0px;
+        overflow-y: auto;
+        box-shadow: 0 0 10px rgba(0,0,0,0.7);
+    }
+    /* Control sections */
+    .control-section {
+        margin-bottom: 20px;
+    }
+    .control-section h2 {
+        margin-bottom: 10px;
+        margin-top: 0px;
+        font-size: 18px;
+    }
+    .toggle-switch {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0px;
+        margin-top: 10px;
+    }
+    .toggle-switch input {
+        margin-right: 10px;
+        transform: scale(1.2);
+    }
+    .slider-container {
+        margin-bottom: 10px;
+    }
+    .slider-container label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .level-bar {
+        width: 100%;
+        height: 10px;
+        background-color: #555;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-bottom: 0px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .level-bar-fill {
+        height: 100%;
+        background-color: #00bfff;
+        width: 0%;
+        transition: width 0.1s ease-in-out;
+    }
+    .advanced-options {
+        margin-top: 10px;
+        padding-left: 10px;
+        border-left: 2px solid #444;
+    }
+    .advanced-options.hidden {
+        display: none;
+    }
+    .advanced-toggle {
+        background: none;
+        border: none;
+        color: #00bfff;
+        cursor: pointer;
+        padding: 0;
+        font-size: 14px;
+        text-decoration: underline;
+        margin-bottom: 10px;
+    }
+    select, input[type="number"] {
+        width: 100%;
+        padding: 5px;
+        background-color: #3e3e3e;
+        color: #fff;
+        border: 1px solid #555;
+        margin-bottom: 10px;
+        border-radius: 3px;
+    }
+    #restingPositionBtn {
+        width: 100%;
+        padding: 10px;
+        background-color: #00bfff;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 10px;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+    }
+    #restingPositionBtn:hover {
+        background-color: #009acd;
+    }
+    #countdown {
+        text-align: center;
+        font-size: 24px;
+        margin-top: 10px;
+        display: none;
+    }
+    
+     .slider-container {
+        margin-bottom: 0px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .slider-container label {
+        margin-bottom: 0;  /* Remove bottom margin since it's now side-by-side */
+    }
+    .slider-container input {
+        width: 80px;  /* Adjust width as needed */
+        display: flex;
+        margin-top: 10px;
+    }
+    .slider-container select {
+        display: flex;
+        margin-top: 10px;
+    }
+
+    .control-card{
+        padding: 10px;
+        border: 1px solid #555;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background-color: #444;
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+        background-color: #2d2d2d;
+    }
+</style>
+</head>
+<body>
+    <header>
+        <h1>FACEWAVE</h1>
+    </header>
+    <div id="container">
+        <div id="mainContent">
+            <div id="videoContainer">
+                <div id="videoWrapper">
+                    <video id="webcam" autoplay playsinline></video>
+                    <canvas id="overlay"></canvas>
+                </div>
+            </div>
+            <div id="controls">
+                <div class="control-section">
+                    <h2>Controls</h2>
+
+                    <!-- Hand Height Control -->
+                    <div class="control-card">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="handHeightToggle" checked>
+                            <label for="handHeightToggle">Hand Height</label>
+                        </div>
+                        <div id="handHeightControls">
+                            <div class="slider-container">
+                                <label for="handHeightCC">CC Channel:</label>
+                                <input type="number" id="handHeightCC" min="0" max="127" value="111">
+                            </div>
+                            <div class="level-bar" id="handHeightBar">
+                                <div class="level-bar-fill" id="handHeightFill"></div>
+                            </div>
+                            <button class="advanced-toggle" data-target="handHeightAdvanced">Advanced Options</button>
+                            <div class="advanced-options hidden" id="handHeightAdvanced">
+                                <label for="handHeightMin">Minimum Value</label>
+                                <input type="number" id="handHeightMin" value="0">
+                                <label for="handHeightMax">Maximum Value</label>
+                                <input type="number" id="handHeightMax" value="127">
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="handHeightInvert">
+                                    <label for="handHeightInvert">Invert Values</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+                    <!-- Mouth Openness Control -->
+                    <div class="control-card">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="mouthOpennessToggle" checked>
+                            <label for="mouthOpennessToggle">Mouth Openness</label>
+                        </div>
+                        <div id="mouthOpennessControls">
+                            <div class="slider-container">
+                                <label for="mouthOpennessCC">CC Channel:</label>
+                                <input type="number" id="mouthOpennessCC" min="0" max="127" value="113">
+                            </div>
+                            <div class="level-bar" id="mouthOpennessBar">
+                                <div class="level-bar-fill" id="mouthOpennessFill"></div>
+                            </div>
+                            <button class="advanced-toggle" data-target="mouthOpennessAdvanced">Advanced Options</button>
+                            <div class="advanced-options hidden" id="mouthOpennessAdvanced">
+                                <label for="mouthOpennessMin">Minimum Value</label>
+                                <input type="number" id="mouthOpennessMin" value="0">
+                                <label for="mouthOpennessMax">Maximum Value</label>
+                                <input type="number" id="mouthOpennessMax" value="127">
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="mouthOpennessInvert">
+                                    <label for="mouthOpennessInvert">Invert Values</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Head Left-Right Control -->
+                    <div class="control-card">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="headLRToggle">
+                            <label for="headLRToggle">Head Left-Right</label>
+                        </div>
+                        <div id="headLRControls" class="hidden">
+                            <div class="slider-container">
+                            <label for="headLRCC">CC Channel:</label>
+                            <input type="number" id="headLRCC" min="0" max="127" value="114">
+                        </div>
+                        <div class="level-bar" id="headLRBar">
+                            <div class="level-bar-fill" id="headLRFill"></div>
+                        </div>
+                        <button class="advanced-toggle" data-target="headLRAdvanced">Advanced Options</button>
+                        <div class="advanced-options hidden" id="headLRAdvanced">
+                            <label for="headLRMin">Minimum Value</label>
+                            <input type="number" id="headLRMin" value="0">
+                            <label for="headLRMax">Maximum Value</label>
+                            <input type="number" id="headLRMax" value="127">
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="headLRInvert">
+                                    <label for="headLRInvert">Invert Values</label>
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Head Height Control -->
+                    <div class="control-card">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="headHeightToggle">
+                            <label for="headHeightToggle">Head Height</label>
+                        </div>
+                        <div id="headHeightControls" class="hidden">
+                            <div class="slider-container">
+                                <label for="headHeightCC">CC Channel:</label>
+                                <input type="number" id="headHeightCC" min="0" max="127" value="115">
+                            </div>
+                            <div class="level-bar" id="headHeightBar">
+                                <div class="level-bar-fill" id="headHeightFill"></div>
+                            </div>
+                            <button class="advanced-toggle" data-target="headHeightAdvanced">Advanced Options</button>
+                            <div class="advanced-options hidden" id="headHeightAdvanced">
+                                <label for="headHeightMin">Minimum Value</label>
+                                <input type="number" id="headHeightMin" value="0">
+                                <label for="headHeightMax">Maximum Value</label>
+                                <input type="number" id="headHeightMax" value="127">
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="headHeightInvert">
+                                    <label for="headHeightInvert">Invert Values</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="restingPositionBtn">Set Resting Position</button>
+                <div id="countdown">3</div>
+
+                <!-- MIDI Output Dropdown -->
+                <div class="slider-container">
+                    <label for="midiOutputSelect">Output:</label>
+                    <select id="midiOutputSelect"></select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Mediapipe Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <!-- Include Mediapipe Drawing Utilities -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
+    <script>
+        // DOM Elements
+        const videoElement = document.getElementById('webcam'); 
+        const canvasElement = document.getElementById('overlay');
+        const canvasCtx = canvasElement.getContext('2d');
+
+        const midiOutputSelect = document.getElementById('midiOutputSelect');
+
+        const restingPositionBtn = document.getElementById('restingPositionBtn');
+        const countdownElement = document.getElementById('countdown');
+
+        // Control Toggles and Settings
+        const controls = {
+            handHeight: {
+                enabled: document.getElementById('handHeightToggle'),
+                cc: document.getElementById('handHeightCC'),
+                min: document.getElementById('handHeightMin'),
+                max: document.getElementById('handHeightMax'),
+                invert: document.getElementById('handHeightInvert'),
+                barFill: document.getElementById('handHeightFill'),
+                lastValue: 0,
+                restingValue: null
+            },
+            mouthOpenness: {
+                enabled: document.getElementById('mouthOpennessToggle'),
+                cc: document.getElementById('mouthOpennessCC'),
+                min: document.getElementById('mouthOpennessMin'),
+                max: document.getElementById('mouthOpennessMax'),
+                invert: document.getElementById('mouthOpennessInvert'),
+                barFill: document.getElementById('mouthOpennessFill'),
+                lastValue: 0,
+                restingValue: null
+            },
+            headLR: {
+                enabled: document.getElementById('headLRToggle'),
+                cc: document.getElementById('headLRCC'),
+                min: document.getElementById('headLRMin'),
+                max: document.getElementById('headLRMax'),
+                invert: document.getElementById('headLRInvert'),
+                barFill: document.getElementById('headLRFill'),
+                lastValue: 0,
+                restingValue: null
+            },
+            headHeight: {
+                enabled: document.getElementById('headHeightToggle'),
+                cc: document.getElementById('headHeightCC'),
+                min: document.getElementById('headHeightMin'),
+                max: document.getElementById('headHeightMax'),
+                invert: document.getElementById('headHeightInvert'),
+                barFill: document.getElementById('headHeightFill'),
+                lastValue: 0,
+                restingValue: null
+            }
+        };
+
+        let midiAccess = null;
+        let midiOutput = null;
+
+        // Initialize Webcam
+        async function initCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoElement.srcObject = stream;
+            await videoElement.play();
+
+            // Adjust canvas size
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+        }
+
+        // Initialize MIDI
+        async function initMIDI() {
+            if (navigator.requestMIDIAccess) {
+                midiAccess = await navigator.requestMIDIAccess();
+                populateMIDIOutputs();
+                midiAccess.onstatechange = populateMIDIOutputs;
+            } else {
+                console.warn('Web MIDI API not supported in this browser.');
+            }
+        }
+
+        // Populate MIDI Output Devices
+        function populateMIDIOutputs() {
+            midiOutputSelect.innerHTML = '';
+            if (midiAccess && midiAccess.outputs.size > 0) {
+                midiAccess.outputs.forEach((output) => {
+                    const option = document.createElement('option');
+                    option.value = output.id;
+                    option.textContent = output.name;
+                    midiOutputSelect.appendChild(option);
+                });
+                // Set the first output as default
+                midiOutput = midiAccess.outputs.get(midiOutputSelect.value);
+            } else {
+                const option = document.createElement('option');
+                option.textContent = 'No MIDI Outputs';
+                midiOutputSelect.appendChild(option);
+            }
+        }
+
+        // MIDI Output Selection Change
+        midiOutputSelect.addEventListener('change', () => {
+            midiOutput = midiAccess.outputs.get(midiOutputSelect.value);
+        });
+
+        // Send MIDI Control Change
+        function sendMIDIControl(controlNumber, value) {
+            if (midiOutput) {
+                midiOutput.send([0xB0, controlNumber, value]);
+            }
+        }
+
+        // Initialize Mediapipe Hands
+        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7,
+        });
+
+        // Initialize Mediapipe Face Mesh
+        const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7,
+        });
+
+        // Start Camera Feed
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await onResults();
+            },
+            width: 640,
+            height: 480,
+        });
+
+        // Combined Results Processing
+        async function onResults() {
+            // Process hands
+            await hands.send({ image: videoElement });
+            // Process face
+            await faceMesh.send({ image: videoElement });
+        }
+
+        // Hands Results Callback
+        hands.onResults((results) => {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                let maxHandY = 1; // Start with bottom of the screen
+                results.multiHandLandmarks.forEach((landmarks) => {
+                    // Draw hand landmarks
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+                    drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 1 });
+
+                    landmarks.forEach((point) => {
+                        maxHandY = Math.min(maxHandY, point.y); // Get the highest point (smallest y)
+                    });
+                });
+
+                let handHeight = 1 - maxHandY; // Invert y-axis for screen coordinates
+                controls.handHeight.lastValue = handHeight;
+
+                if (controls.handHeight.restingValue !== null) {
+                    handHeight = handHeight - controls.handHeight.restingValue;
+                }
+
+                // Clamp and scale MIDI value
+                let midiValue = Math.floor(handHeight * 127);
+                midiValue = Math.max(0, Math.min(midiValue, 127));
+                midiValue = scaleValue(midiValue, controls.handHeight.min.value, controls.handHeight.max.value, controls.handHeight.invert.checked);
+
+                if (controls.handHeight.enabled.checked) {
+                    sendMIDIControl(parseInt(controls.handHeight.cc.value), midiValue);
+                }
+
+                // Update level bar
+                controls.handHeight.barFill.style.width = `${(midiValue / 127) * 100}%`;
+            } else {
+                // No hands detected
+                if (controls.handHeight.enabled.checked) {
+                    let midiValue = controls.handHeight.invert.checked ? parseInt(controls.handHeight.max.value) : parseInt(controls.handHeight.min.value);
+                    sendMIDIControl(parseInt(controls.handHeight.cc.value), midiValue);
+                    controls.handHeight.barFill.style.width = controls.handHeight.invert.checked ? '100%' : '0%';
+                } else {
+                    controls.handHeight.barFill.style.width = '0%';
+                }
+            }
+
+            canvasCtx.restore();
+        });
+
+        // Face Results Callback
+        faceMesh.onResults((results) => {
+            canvasCtx.save();
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const faceLandmarks = results.multiFaceLandmarks[0];
+                // Draw face landmarks
+                drawConnectors(canvasCtx, faceLandmarks, FACEMESH_TESSELATION, { color: '#C0C0C070', lineWidth: 1 });
+
+                // Mouth openness calculation
+                const upperLip = faceLandmarks[13];
+                const lowerLip = faceLandmarks[14];
+                let mouthOpenness = Math.abs(upperLip.y - lowerLip.y);
+                controls.mouthOpenness.lastValue = mouthOpenness;
+
+                if (controls.mouthOpenness.restingValue !== null) {
+                    mouthOpenness = mouthOpenness - controls.mouthOpenness.restingValue;
+                }
+
+                // Clamp and scale MIDI value
+                let midiValue = Math.floor(mouthOpenness * 2000); // Scale factor may need adjustment
+                midiValue = Math.max(0, Math.min(midiValue, 127));
+                midiValue = scaleValue(midiValue, controls.mouthOpenness.min.value, controls.mouthOpenness.max.value, controls.mouthOpenness.invert.checked);
+
+                if (controls.mouthOpenness.enabled.checked) {
+                    sendMIDIControl(parseInt(controls.mouthOpenness.cc.value), midiValue);
+                }
+
+                // Update level bar
+                controls.mouthOpenness.barFill.style.width = `${(midiValue / 127) * 100}%`;
+
+                // Head Left-Right Movement
+                const nose = faceLandmarks[1];
+                let headLR = nose.x;
+                controls.headLR.lastValue = headLR;
+
+                if (controls.headLR.restingValue !== null) {
+                    headLR = headLR - controls.headLR.restingValue;
+                }
+
+                let headLRValue = Math.floor(headLR * 127);
+                headLRValue = Math.max(0, Math.min(headLRValue, 127));
+                headLRValue = scaleValue(headLRValue, controls.headLR.min.value, controls.headLR.max.value, controls.headLR.invert.checked);
+
+                if (controls.headLR.enabled.checked) {
+                    sendMIDIControl(parseInt(controls.headLR.cc.value), headLRValue);
+                }
+
+                controls.headLR.barFill.style.width = `${(headLRValue / 127) * 100}%`;
+
+                // Head Height Movement
+                let headHeight = 1 - nose.y; // Invert y-axis
+                controls.headHeight.lastValue = headHeight;
+
+                if (controls.headHeight.restingValue !== null) {
+                    headHeight = headHeight - controls.headHeight.restingValue;
+                }
+
+                let headHeightValue = Math.floor(headHeight * 127);
+                headHeightValue = Math.max(0, Math.min(headHeightValue, 127));
+                headHeightValue = scaleValue(headHeightValue, controls.headHeight.min.value, controls.headHeight.max.value, controls.headHeight.invert.checked);
+
+                if (controls.headHeight.enabled.checked) {
+                    sendMIDIControl(parseInt(controls.headHeight.cc.value), headHeightValue);
+                }
+
+                controls.headHeight.barFill.style.width = `${(headHeightValue / 127) * 100}%`;
+
+            } else {
+                // No face detected
+                if (controls.mouthOpenness.enabled.checked) {
+                    let midiValue = controls.mouthOpenness.invert.checked ? parseInt(controls.mouthOpenness.max.value) : parseInt(controls.mouthOpenness.min.value);
+                    sendMIDIControl(parseInt(controls.mouthOpenness.cc.value), midiValue);
+                    controls.mouthOpenness.barFill.style.width = controls.mouthOpenness.invert.checked ? '100%' : '0%';
+                } else {
+                    controls.mouthOpenness.barFill.style.width = '0%';
+                }
+
+                if (controls.headLR.enabled.checked) {
+                    let midiValue = controls.headLR.invert.checked ? parseInt(controls.headLR.max.value) : parseInt(controls.headLR.min.value);
+                    sendMIDIControl(parseInt(controls.headLR.cc.value), midiValue);
+                    controls.headLR.barFill.style.width = controls.headLR.invert.checked ? '100%' : '0%';
+                } else {
+                    controls.headLR.barFill.style.width = '0%';
+                }
+
+                if (controls.headHeight.enabled.checked) {
+                    let midiValue = controls.headHeight.invert.checked ? parseInt(controls.headHeight.max.value) : parseInt(controls.headHeight.min.value);
+                    sendMIDIControl(parseInt(controls.headHeight.cc.value), midiValue);
+                    controls.headHeight.barFill.style.width = controls.headHeight.invert.checked ? '100%' : '0%';
+                } else {
+                    controls.headHeight.barFill.style.width = '0%';
+                }
+            }
+
+            canvasCtx.restore();
+        });
+
+        // Scale value based on min and max settings, and invert if necessary
+        function scaleValue(value, min, max, invert) {
+            min = parseInt(min);
+            max = parseInt(max);
+            let scaled = ((value - 0) * (max - min)) / (127 - 0) + min;
+            scaled = Math.max(min, Math.min(scaled, max));
+            if (invert) {
+                scaled = max - (scaled - min);
+            }
+            return Math.round(scaled);
+        }
+
+        // Resting Position Calibration
+        restingPositionBtn.addEventListener('click', () => {
+            let countdown = 3;
+            countdownElement.textContent = countdown;
+            countdownElement.style.display = 'block';
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    countdownElement.textContent = countdown;
+                } else {
+                    clearInterval(interval);
+                    countdownElement.textContent = '';
+                    countdownElement.style.display = 'none';
+                    for (let key in controls) {
+                        if (controls[key].lastValue !== undefined) {
+                            controls[key].restingValue = controls[key].lastValue || 0;
+                        }
+                    }
+                }
+            }, 1000);
+        });
+
+        // Advanced Options Toggle
+        document.querySelectorAll('.advanced-toggle').forEach(button => {
+            button.addEventListener('click', () => {
+                const target = document.getElementById(button.dataset.target);
+                target.classList.toggle('hidden');
+            });
+        });
+
+        // Control Toggle Visibility
+        controls.handHeight.enabled.addEventListener('change', () => {
+            document.getElementById('handHeightControls').classList.toggle('hidden', !controls.handHeight.enabled.checked);
+        });
+        controls.mouthOpenness.enabled.addEventListener('change', () => {
+            document.getElementById('mouthOpennessControls').classList.toggle('hidden', !controls.mouthOpenness.enabled.checked);
+        });
+        controls.headLR.enabled.addEventListener('change', () => {
+            document.getElementById('headLRControls').classList.toggle('hidden', !controls.headLR.enabled.checked);
+        });
+        controls.headHeight.enabled.addEventListener('change', () => {
+            document.getElementById('headHeightControls').classList.toggle('hidden', !controls.headHeight.enabled.checked);
+        });
+
+        // Initialize everything
+        initCamera().then(() => {
+            camera.start();
+            initMIDI();
+        });
+    </script>
+</body>
+</html>
